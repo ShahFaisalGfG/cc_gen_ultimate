@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "cc_gen_ultimate (Flutter Windows)",
+            "program": "lib/main.dart",
+            "deviceId": "windows",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

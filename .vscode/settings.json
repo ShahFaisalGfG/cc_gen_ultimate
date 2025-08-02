@@ -1,0 +1,10 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "cmake.sourceDirectory": "D:/dev/WebDev/CC Gen Ultimate/cc_gen_ultimate/windows",
+    "css.lint.vendorPrefix": "ignore",
+    "css.lint.compatibleVendorPrefixes": "ignore",
+    "problems.excludePatterns": [
+        "**/android/build/reports/**"
+    ],
+    "problems.showCurrentInStatus": true
+}
