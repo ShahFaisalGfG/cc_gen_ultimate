@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,25 +10,31 @@ import 'dependency_manager.dart';
 import '../models/dependency_install_step.dart';
 
 class ConfigurationService {
-  static final ConfigurationService _instance = ConfigurationService._internal();
+  static final ConfigurationService _instance =
+      ConfigurationService._internal();
   factory ConfigurationService() => _instance;
-  
+
   late final PythonEnvironmentService _pythonEnv;
   late final DependencyManager _dependencyManager;
   final _logger = Logger('ConfigurationService');
-  
+
   ConfigurationService._internal() {
     _pythonEnv = PythonEnvironmentService();
     _dependencyManager = DependencyManager();
   }
 
   // Configuration file constants
-  final String _configFileName = 'config.json';
+  final String _configFileName = 'config.ini';
   String get _configDir => Platform.isAndroid
       ? '/storage/emulated/0/Android/data/com.example.cc_gen_ultimate/files'
       : (Platform.isWindows
-          ? path.join(Platform.environment['APPDATA'] ?? '', 'cc_gen_ultimate')
-          : path.join(Platform.environment['HOME'] ?? '', '.cc_gen_ultimate'));
+            ? Directory
+                  .current
+                  .path // Use current directory for Windows
+            : path.join(
+                Platform.environment['HOME'] ?? '',
+                '.cc_gen_ultimate',
+              ));
 
   // Configuration keys
   final String keySelectedModel = 'selectedModel';
@@ -51,36 +56,93 @@ class ConfigurationService {
     'theme': 'system',
     'maxRetries': 3,
     'autoExpandLogs': true,
-    'faster-whisper': {
-      'downloadTimeout': 600,
-      'transcribeTimeout': 3600,
-    },
-    'libretranslate': {
-      'serverPort': 5000,
-    },
+    'faster-whisper': {'downloadTimeout': 600, 'transcribeTimeout': 3600},
+    'libretranslate': {'serverPort': 5000},
   };
 
   String get configPath => path.join(_configDir, _configFileName);
 
-  String get fasterWhisperModelsDir => path.join(_configDir, 'models', 'faster-whisper');
-  String get translateModelsDir => path.join(_configDir, 'models', 'libretranslate');
+  String get fasterWhisperModelsDir =>
+      path.join(_configDir, 'models', 'faster-whisper');
+  String get translateModelsDir =>
+      path.join(_configDir, 'models', 'libretranslate');
 
   // Configuration loading and saving
   Future<Map<String, dynamic>> loadConfiguration() async {
     try {
       final file = File(configPath);
+      print('Config path: $configPath');
+      print('Config file exists: ${await file.exists()}');
+
       if (!await file.exists()) {
+        print('Creating default config...');
         await _saveConfig(_defaults);
         return Map<String, dynamic>.from(_defaults);
       }
-      
-      final jsonStr = await file.readAsString();
-      final config = json.decode(jsonStr) as Map<String, dynamic>;
+
+      final iniContent = await file.readAsString();
+      print('INI content: $iniContent');
+
+      final config = _parseIniFile(iniContent);
+      print('Parsed config: $config');
+
       return {..._defaults, ...config};
     } catch (e) {
+      print('Error loading configuration: $e');
       _logger.warning('Error loading configuration: $e');
       return Map<String, dynamic>.from(_defaults);
     }
+  }
+
+  Map<String, dynamic> _parseIniFile(String iniContent) {
+    final Map<String, dynamic> result = {};
+    final lines = iniContent.split('\n');
+
+    for (String line in lines) {
+      line = line.trim();
+      if (line.isEmpty || line.startsWith('#') || line.startsWith(';')) {
+        continue; // Skip empty lines and comments
+      }
+
+      final parts = line.split('=');
+      if (parts.length == 2) {
+        final key = parts[0].trim();
+        final value = parts[1].trim();
+
+        // Convert value to appropriate type
+        if (value.toLowerCase() == 'true') {
+          result[key] = true;
+        } else if (value.toLowerCase() == 'false') {
+          result[key] = false;
+        } else if (int.tryParse(value) != null) {
+          result[key] = int.parse(value);
+        } else if (double.tryParse(value) != null) {
+          result[key] = double.parse(value);
+        } else {
+          result[key] = value;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  String _generateIniContent(Map<String, dynamic> config) {
+    final buffer = StringBuffer();
+
+    // Add a header comment
+    buffer.writeln('# CC Gen Ultimate Configuration File');
+    buffer.writeln('# Generated automatically - modify with care');
+    buffer.writeln();
+
+    // Write simple key-value pairs (exclude nested objects for now)
+    config.forEach((key, value) {
+      if (value is! Map) {
+        buffer.writeln('$key=$value');
+      }
+    });
+
+    return buffer.toString();
   }
 
   Future<void> _saveConfig(Map<String, dynamic> config) async {
@@ -91,15 +153,25 @@ class ConfigurationService {
       }
 
       final file = File(configPath);
-      final jsonStr = json.encode(config);
-      await file.writeAsString(jsonStr);
+      final iniContent = _generateIniContent(config);
+      await file.writeAsString(iniContent);
 
       // Cache critical settings in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await Future.wait([
-        prefs.setString(keySelectedModel, config[keySelectedModel] ?? _defaults[keySelectedModel]),
-        prefs.setString(keySelectedLanguage, config[keySelectedLanguage] ?? _defaults[keySelectedLanguage]),
-        prefs.setString(keyOutputFormat, config[keyOutputFormat] ?? _defaults[keyOutputFormat]),
+        prefs.setString(
+          keySelectedModel,
+          config[keySelectedModel]?.toString() ??
+              _defaults[keySelectedModel].toString(),
+        ),
+        prefs.setString(
+          keySelectedLanguage,
+          config[keySelectedLanguage] ?? _defaults[keySelectedLanguage],
+        ),
+        prefs.setString(
+          keyOutputFormat,
+          config[keyOutputFormat] ?? _defaults[keyOutputFormat],
+        ),
       ]);
     } catch (e) {
       _logger.severe('Error saving configuration: $e');
@@ -180,7 +252,7 @@ class ConfigurationService {
   Stream<DependencyInstallStep> installDependency(String dependency) {
     return _dependencyManager.installDependency(dependency);
   }
-  
+
   Future<void> installDependencies() async {
     final status = await checkDependencies();
     for (var entry in status.entries) {

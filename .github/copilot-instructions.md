@@ -10,6 +10,6 @@ But now we'll use a different approach to implement the features.
 - Implement a FastAPI backend(py file in assets/py_script) to handle requests for translation.
 - Ensure that the FastAPI backends are set up to run in their respective virtual environments.
 - Use the `requests` library to communicate with the FastAPI backends from the Flutter app.
-- Store configuration settings in a `config.json` file in the app directory.
+- Store configuration settings in a `config.ini` file in the app directory.
 - Models Table should allow users to download, manage, and update Faster-Whisper and LibreTranslate models now.
 - remove the gpu requirement from the models.[removoe any logic that checks for GPU availability]

@@ -77,7 +77,7 @@ flutter pub get
 
 ## Configuration
 
-The application stores its configuration in `config.json` in the app directory. This includes:
+The application stores its configuration in `config.ini` in the app directory. This includes:
 - Model paths and settings
 - API endpoints
 - User preferences
