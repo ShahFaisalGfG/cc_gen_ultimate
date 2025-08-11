@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../utils/config.dart';
+import '../services/configuration_service.dart';
 import '../logic/theme.dart';
 import '../services/app_initialization_service.dart';
 import 'main_screen.dart';
@@ -17,6 +17,7 @@ class _ThemeAppWrapperState extends State<ThemeAppWrapper> {
   bool _initialized = false;
   late ThemeMode _themeMode = ThemeMode.system;
   final AppInitializationService _initService = AppInitializationService();
+  final ConfigurationService _configService = ConfigurationService();
 
   @override
   void initState() {
@@ -28,11 +29,12 @@ class _ThemeAppWrapperState extends State<ThemeAppWrapper> {
     if (_initialized) return;
 
     // Load theme mode
-    final config = await ConfigManager.loadConfig();
+    final config = await _configService.loadConfiguration();
     if (mounted) {
       setState(() {
         _themeMode = ThemeManager.getThemeMode(
-          config['themeMode'] ?? ThemeMode.system.index,
+          int.tryParse(config['themeMode']?.toString() ?? '2') ??
+              ThemeMode.system.index,
         );
       });
     }
@@ -56,9 +58,10 @@ class _ThemeAppWrapperState extends State<ThemeAppWrapper> {
   Future<void> _updateThemeMode(ThemeMode mode) async {
     if (!mounted) return;
     setState(() => _themeMode = mode);
-    final config = await ConfigManager.loadConfig();
-    config['themeMode'] = ThemeManager.getThemeIndex(mode);
-    await ConfigManager.saveConfig(config);
+    await _configService.updateSetting(
+      'themeMode',
+      ThemeManager.getThemeIndex(mode).toString(),
+    );
   }
 
   @override

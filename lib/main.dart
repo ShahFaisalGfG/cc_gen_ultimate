@@ -8,18 +8,16 @@ import 'state/translation_state.dart';
 // Services
 import 'services/permissions_service.dart';
 
+// UI Components
+import 'ui/theme_app_wrapper.dart';
+
 // Global keys for state management
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  print('Starting app...');
   WidgetsFlutterBinding.ensureInitialized();
-  print('Flutter binding initialized...');
-
   await PermissionsService.requestAndroidPermissions();
-  print('Permissions requested...');
-
   runApp(
     MultiProvider(
       providers: [
@@ -29,10 +27,7 @@ void main() async {
       child: MaterialApp(
         scaffoldMessengerKey: scaffoldMessengerKey,
         navigatorKey: navigatorKey,
-        home: Scaffold(
-          appBar: AppBar(title: const Text('CC Gen Ultimate')),
-          body: const Center(child: Text('App is working!')),
-        ),
+        home: const ThemeAppWrapper(),
       ),
     ),
   );

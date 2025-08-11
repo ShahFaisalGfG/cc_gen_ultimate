@@ -28,9 +28,13 @@ class ConfigurationService {
   String get _configDir => Platform.isAndroid
       ? '/storage/emulated/0/Android/data/com.example.cc_gen_ultimate/files'
       : (Platform.isWindows
-            ? Directory
-                  .current
-                  .path // Use current directory for Windows
+            ? (Directory.current.path.endsWith('cc_gen_ultimate')
+                  ? Directory
+                        .current
+                        .path // Development: use project directory
+                  : path.dirname(
+                      Platform.resolvedExecutable,
+                    )) // Production: use app directory
             : path.join(
                 Platform.environment['HOME'] ?? '',
                 '.cc_gen_ultimate',
@@ -39,25 +43,23 @@ class ConfigurationService {
   // Configuration keys
   final String keySelectedModel = 'selectedModel';
   final String keySelectedLanguage = 'selectedLanguage';
-  final String keyOutputFormat = 'outputFormat';
+  final String keyOutputFormat = 'selectedFormat';
   final String keyTranslateFrom = 'translateFrom';
   final String keyTranslateTo = 'translateTo';
-  final String keyTheme = 'theme';
+  final String keyTheme = 'themeMode';
   final String keyMaxRetries = 'maxRetries';
   final String keyAutoExpandLogs = 'autoExpandLogs';
 
   // Default values
   final Map<String, dynamic> _defaults = {
     'selectedModel': 'tiny',
-    'selectedLanguage': 'en',
-    'outputFormat': '.srt',
-    'translateFrom': 'en',
-    'translateTo': 'none',
-    'theme': 'system',
-    'maxRetries': 3,
-    'autoExpandLogs': true,
-    'faster-whisper': {'downloadTimeout': 600, 'transcribeTimeout': 3600},
-    'libretranslate': {'serverPort': 5000},
+    'selectedLanguage': 'English',
+    'selectedFormat': '.srt',
+    'translateFrom': 'English',
+    'translateTo': 'None',
+    'themeMode': '2',
+    'maxRetries': '3',
+    'autoExpandLogs': 'true',
   };
 
   String get configPath => path.join(_configDir, _configFileName);
@@ -67,36 +69,10 @@ class ConfigurationService {
   String get translateModelsDir =>
       path.join(_configDir, 'models', 'libretranslate');
 
-  // Configuration loading and saving
-  Future<Map<String, dynamic>> loadConfiguration() async {
-    try {
-      final file = File(configPath);
-      print('Config path: $configPath');
-      print('Config file exists: ${await file.exists()}');
-
-      if (!await file.exists()) {
-        print('Creating default config...');
-        await _saveConfig(_defaults);
-        return Map<String, dynamic>.from(_defaults);
-      }
-
-      final iniContent = await file.readAsString();
-      print('INI content: $iniContent');
-
-      final config = _parseIniFile(iniContent);
-      print('Parsed config: $config');
-
-      return {..._defaults, ...config};
-    } catch (e) {
-      print('Error loading configuration: $e');
-      _logger.warning('Error loading configuration: $e');
-      return Map<String, dynamic>.from(_defaults);
-    }
-  }
-
-  Map<String, dynamic> _parseIniFile(String iniContent) {
-    final Map<String, dynamic> result = {};
-    final lines = iniContent.split('\n');
+  // INI file parsing helpers
+  Map<String, String> _parseIni(String content) {
+    final Map<String, String> config = {};
+    final lines = content.split('\n');
 
     for (String line in lines) {
       line = line.trim();
@@ -104,45 +80,48 @@ class ConfigurationService {
         continue; // Skip empty lines and comments
       }
 
-      final parts = line.split('=');
-      if (parts.length == 2) {
-        final key = parts[0].trim();
-        final value = parts[1].trim();
-
-        // Convert value to appropriate type
-        if (value.toLowerCase() == 'true') {
-          result[key] = true;
-        } else if (value.toLowerCase() == 'false') {
-          result[key] = false;
-        } else if (int.tryParse(value) != null) {
-          result[key] = int.parse(value);
-        } else if (double.tryParse(value) != null) {
-          result[key] = double.parse(value);
-        } else {
-          result[key] = value;
-        }
+      final equalIndex = line.indexOf('=');
+      if (equalIndex != -1) {
+        final key = line.substring(0, equalIndex).trim();
+        final value = line.substring(equalIndex + 1).trim();
+        config[key] = value;
       }
     }
 
-    return result;
+    return config;
   }
 
-  String _generateIniContent(Map<String, dynamic> config) {
+  String _writeIni(Map<String, dynamic> config) {
     final buffer = StringBuffer();
-
-    // Add a header comment
-    buffer.writeln('# CC Gen Ultimate Configuration File');
-    buffer.writeln('# Generated automatically - modify with care');
-    buffer.writeln();
-
-    // Write simple key-value pairs (exclude nested objects for now)
     config.forEach((key, value) {
-      if (value is! Map) {
-        buffer.writeln('$key=$value');
-      }
+      buffer.writeln('$key=$value');
     });
-
     return buffer.toString();
+  }
+
+  // Configuration loading and saving
+  Future<Map<String, dynamic>> loadConfiguration() async {
+    try {
+      final file = File(configPath);
+      if (!await file.exists()) {
+        await _saveConfig(_defaults);
+        return Map<String, dynamic>.from(_defaults);
+      }
+
+      final iniContent = await file.readAsString();
+      final iniConfig = _parseIni(iniContent);
+
+      // Merge with defaults, keeping INI values as strings but converting where needed
+      final config = Map<String, dynamic>.from(_defaults);
+      iniConfig.forEach((key, value) {
+        config[key] = value;
+      });
+
+      return config;
+    } catch (e) {
+      _logger.warning('Error loading configuration: $e');
+      return Map<String, dynamic>.from(_defaults);
+    }
   }
 
   Future<void> _saveConfig(Map<String, dynamic> config) async {
@@ -153,7 +132,7 @@ class ConfigurationService {
       }
 
       final file = File(configPath);
-      final iniContent = _generateIniContent(config);
+      final iniContent = _writeIni(config);
       await file.writeAsString(iniContent);
 
       // Cache critical settings in SharedPreferences
@@ -166,11 +145,13 @@ class ConfigurationService {
         ),
         prefs.setString(
           keySelectedLanguage,
-          config[keySelectedLanguage] ?? _defaults[keySelectedLanguage],
+          config[keySelectedLanguage]?.toString() ??
+              _defaults[keySelectedLanguage].toString(),
         ),
         prefs.setString(
           keyOutputFormat,
-          config[keyOutputFormat] ?? _defaults[keyOutputFormat],
+          config[keyOutputFormat]?.toString() ??
+              _defaults[keyOutputFormat].toString(),
         ),
       ]);
     } catch (e) {
