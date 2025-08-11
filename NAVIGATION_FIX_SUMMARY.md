@@ -92,15 +92,18 @@ onFinish: () async {
 ## Evolution of the Fix
 
 ### Version 1: Status Refresh Approach
+
 - Initially tried refreshing dependency status in "Finish" button
 - Added verification logic with error handling
 - **Problem:** Added unnecessary delay and complexity
 
 ### Version 2: Trust-but-Verify Approach  
+
 - Service performed additional verification after widget verification
 - **Problem:** Double verification was redundant
 
 ### Version 3: Smart Logic Approach (Final)
+
 - Recognized that "Finish" button existence = all dependencies installed
 - Eliminated redundant verification
 - **Result:** Fast, clean navigation with proper dialog management
@@ -108,6 +111,7 @@ onFinish: () async {
 ## Technical Details
 
 ### Dialog Stack Management
+
 ```
 Before Fix:
 SplashScreen → DependencyCheckDialog → DependencyInstallProgress
@@ -122,6 +126,7 @@ SplashScreen → DependencyCheckDialog → DependencyInstallProgress
 ```
 
 ### Flow Control Logic
+
 ```dart
 // Key change in _installDependencyForSplash:
 if (result == 'finish') {
@@ -189,18 +194,21 @@ if (context.mounted && shouldContinue) {
 ## Future Maintenance Notes
 
 ### Key Principles Learned
+
 1. **Trust UI State:** If a button appears, trust the conditions that made it appear
 2. **Avoid Double Verification:** Don't re-check what was already verified
 3. **Manage Dialog Stacks:** Always consider what dialogs are open when navigating
 4. **Control Flow Carefully:** Use flags like `shouldContinue` to prevent unwanted loops
 
 ### Common Pitfalls to Avoid
+
 - ❌ Adding verification "just to be safe" without considering performance impact
 - ❌ Ignoring dialog stack management in navigation flows
 - ❌ Not considering all possible execution paths after async operations
 - ❌ Over-engineering solutions when simple logic suffices
 
 ### Debug Tips for Similar Issues
+
 1. **Log navigation events:** Track when dialogs open/close
 2. **Check execution flow:** Verify which code paths execute after async operations
 3. **Test dialog stacks:** Ensure proper cleanup in navigation scenarios

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'python_environment_service.dart';
 import '../../models/dependency_install_step.dart';
 
@@ -108,17 +110,48 @@ class DependencyManager {
     }
   }
 
-  Future<File> _copyBatchFile(String dependency) async {
-    // Use Flutter's asset bundle to load the batch file from assets
-    final assetPath = 'assets/installation_scripts/${dependency}_install.bat';
-    final tempDir = Directory.systemTemp;
-    final tempBatFile = File('${tempDir.path}/${dependency}_install.bat');
+  /// Extract asset to runtime directory for execution
+  /// This is the recommended approach for Flutter asset management
+  Future<String> _extractAsset(String assetPath, String fileName) async {
+    final byteData = await rootBundle.load(assetPath);
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(byteData.buffer.asUint8List());
+    return file.path;
+  }
 
-    // Load the asset as bytes
-    final byteData = await File(assetPath).readAsBytes();
-    await tempBatFile.writeAsBytes(byteData);
-    // Return the path to the temporary batch file
-    return tempBatFile;
+  /// Extract Python script from assets for execution
+  /// Useful for FastAPI backends and other Python scripts
+  Future<String> extractPythonScript(String scriptName) async {
+    final assetPath = 'assets/py_scripts/$scriptName';
+    try {
+      return await _extractAsset(assetPath, scriptName);
+    } catch (e) {
+      throw Exception('Failed to extract Python script $scriptName: $e');
+    }
+  }
+
+  /// Check if Python is available in system PATH
+  Future<bool> isPythonAvailable() async {
+    try {
+      final result = await Process.run('python', ['--version']);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<File> _copyBatchFile(String dependency) async {
+    // Use Flutter's proper asset bundle loading
+    final assetPath = 'assets/installation_scripts/${dependency}_install.bat';
+    final fileName = '${dependency}_install.bat';
+
+    try {
+      final filePath = await _extractAsset(assetPath, fileName);
+      return File(filePath);
+    } catch (e) {
+      throw Exception('Failed to extract batch file for $dependency: $e');
+    }
   }
 
   Stream<String> _runBatchFile(
