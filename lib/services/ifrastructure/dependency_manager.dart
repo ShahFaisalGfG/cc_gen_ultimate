@@ -131,16 +131,6 @@ class DependencyManager {
     }
   }
 
-  /// Check if Python is available in system PATH
-  Future<bool> isPythonAvailable() async {
-    try {
-      final result = await Process.run('python', ['--version']);
-      return result.exitCode == 0;
-    } catch (_) {
-      return false;
-    }
-  }
-
   Future<File> _copyBatchFile(String dependency) async {
     // Use Flutter's proper asset bundle loading
     final assetPath = 'assets/installation_scripts/${dependency}_install.bat';
