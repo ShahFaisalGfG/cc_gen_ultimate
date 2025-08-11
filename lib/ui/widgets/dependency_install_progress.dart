@@ -309,6 +309,14 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
                 // Show "Finish" button if no more dependencies
                 return ElevatedButton(
                   onPressed: () {
+                    // Since the "Finish" button only appears when all dependencies are installed,
+                    // we can proceed directly without re-checking
+                    widget.logsState.addLog(
+                      'All dependencies installation completed. Proceeding to main screen...',
+                      level: LogLevel.success,
+                    );
+
+                    // Close this dialog and proceed
                     Navigator.pop(context);
                     widget.onFinish?.call();
                   },

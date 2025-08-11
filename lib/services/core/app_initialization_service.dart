@@ -342,61 +342,25 @@ class AppInitializationService {
             // Add callback for when all dependencies are done
             onFinish: () async {
               _logsState.addLog(
-                'All dependencies installed successfully.',
+                'Installation process completed. Dependencies verified by installer.',
                 level: LogLevel.success,
               );
 
-              // Check if all dependencies are actually installed
+              // The DependencyInstallProgress widget has already verified the dependencies
               if (onAllComplete != null) {
                 _logsState.addLog(
-                  'DEBUG: onAllComplete callback is available, checking final status...',
+                  'DEBUG: onAllComplete callback is available, calling it directly',
                   level: LogLevel.info,
                 );
-                try {
-                  final finalStatus = await _configService.checkDependencies();
-                  _logsState.addLog(
-                    'DEBUG: Final status check result: $finalStatus',
-                    level: LogLevel.info,
-                  );
-                  final allInstalled = finalStatus.values.every(
-                    (installed) => installed,
-                  );
-                  _logsState.addLog(
-                    'DEBUG: All dependencies installed: $allInstalled',
-                    level: LogLevel.info,
-                  );
-
-                  if (allInstalled) {
-                    _logsState.addLog(
-                      'DEBUG: All dependencies confirmed, calling onAllComplete and closing dialog',
-                      level: LogLevel.success,
-                    );
-                    // Call the completion callback first
-                    onAllComplete();
-                    // Then close the dialog
-                    Navigator.pop(context, 'complete');
-                    return;
-                  } else {
-                    _logsState.addLog(
-                      'DEBUG: Not all dependencies installed, falling back to finish',
-                      level: LogLevel.warning,
-                    );
-                  }
-                } catch (e) {
-                  _logsState.addLog(
-                    'Error checking final dependency status: $e',
-                    level: LogLevel.error,
-                  );
-                }
-              } else {
-                _logsState.addLog(
-                  'DEBUG: onAllComplete callback is null',
-                  level: LogLevel.warning,
-                );
+                // Call the completion callback first
+                onAllComplete();
+                // Then close the dialog
+                Navigator.pop(context, 'complete');
+                return;
               }
 
               _logsState.addLog(
-                'DEBUG: Falling back to regular finish navigation',
+                'DEBUG: No onAllComplete callback, using regular finish navigation',
                 level: LogLevel.info,
               );
               Navigator.pop(context, 'finish');
@@ -509,13 +473,16 @@ class AppInitializationService {
                 onSplashComplete,
               );
             },
-            onFinish: () {
+            onFinish: () async {
               _logsState.addLog(
-                'All dependencies installed successfully.',
+                'Installation process completed. Dependencies verified by installer.',
                 level: LogLevel.success,
               );
+
+              // The DependencyInstallProgress widget has already verified the dependencies
+              // So we can proceed directly to the main screen
               Navigator.pop(context, 'finish');
-              checkDependenciesForSplash(context, onSplashComplete);
+              onSplashComplete(); // Navigate directly to main screen
             },
           ),
         );
@@ -526,6 +493,11 @@ class AppInitializationService {
         } else if (result == 'retry') {
           isRetrying = true;
           continue;
+        } else if (result == 'finish') {
+          // Dependencies verified and installation completed successfully
+          isRetrying = false;
+          shouldContinue = false; // Don't re-check dependencies
+          break;
         } else {
           isRetrying = false;
         }

@@ -71,15 +71,7 @@ flutter:
     - assets/
     - assets/icon.png
     - assets/installation_scripts/
-    - assets/installation_scripts/faster-whisper_install.bat
-    - assets/installation_scripts/libretranslate_install.bat
-    - assets/installation_scripts/python_install.bat
-    - assets/installation_scripts/ffmpeg_install.bat
-    - assets/installation_scripts/pip_install.bat
     - assets/py_scripts/
-    - assets/py_scripts/translate_api.py
-    - assets/py_scripts/whisper_api.py
-
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
