@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/queued_file.dart';
-import '../services/libre_translate_service.dart';
-import '../services/configuration_service.dart';
+import '../services/ai/libre_translate_service.dart';
+import '../services/core/configuration_service.dart';
 import '../utils/file_utils.dart';
 
 class TranslationState extends ChangeNotifier {

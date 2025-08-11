@@ -6,10 +6,13 @@ import 'controllers/whisper_controller.dart';
 import 'state/translation_state.dart';
 
 // Services
-import 'services/permissions_service.dart';
+import 'services/core/permissions_service.dart';
 
 // UI Components
-import 'ui/theme_app_wrapper.dart';
+import 'ui/wrappers/theme_app_wrapper.dart';
+
+
+
 
 // Global keys for state management
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();

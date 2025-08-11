@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../state/logs_state.dart';
-import '../../services/dependency_manager.dart';
-import '../../logic/logs.dart';
-import 'logs_panel.dart';
-
+import '../../services/ifrastructure/dependency_manager.dart';
+import '../../logic/logs_entry.dart';
+import 'logs_widget/logs_panel.dart';
 
 class DependencyCheckDialog extends StatefulWidget {
   final Map<String, bool> initialStatus;
@@ -41,7 +40,7 @@ class _DependencyCheckDialogState extends State<DependencyCheckDialog> {
     'pip',
     'ffmpeg',
     'faster-whisper',
-    'libretranslate'
+    'libretranslate',
   ];
 
   @override
@@ -69,7 +68,8 @@ class _DependencyCheckDialogState extends State<DependencyCheckDialog> {
 
   String? _getNextMissingDependency() {
     for (var dep in dependencySequence) {
-      if (!status[dep]!) {
+      final depStatus = status[dep];
+      if (depStatus == null || !depStatus) {
         return dep;
       }
     }
@@ -97,8 +97,7 @@ class _DependencyCheckDialogState extends State<DependencyCheckDialog> {
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
-            if (_isChecking)
-              const LinearProgressIndicator(),
+            if (_isChecking) const LinearProgressIndicator(),
             if (!_isChecking) ...[
               ...dependencySequence.map((dep) {
                 final isInstalled = status[dep] ?? false;
@@ -121,14 +120,14 @@ class _DependencyCheckDialogState extends State<DependencyCheckDialog> {
                   ),
                 );
               }),
-              if (!status['python']!) ...[
+              if (status['python'] != true) ...[
                 const SizedBox(height: 16),
                 const Text(
-                    'Python 3.8 or higher is required.\n'
-                    'Python 3.10 is recommended for optimal compatibility.\n'
-                    'If a newer version is installed, consider downgrading to Python 3.10.\n\n'
-                    '- Silent Install: Automatically installs Python 3.10\n(administrator privileges required).\n'
-                    '- Manual Download: Download and install Python 3.10 manually\n(user-only installation available).',
+                  'Python 3.8 or higher is required.\n'
+                  'Python 3.10 is recommended for optimal compatibility.\n'
+                  'If a newer version is installed, consider downgrading to Python 3.10.\n\n'
+                  '- Silent Install: Automatically installs Python 3.10\n(administrator privileges required).\n'
+                  '- Manual Download: Download and install Python 3.10 manually\n(user-only installation available).',
                   style: TextStyle(color: Colors.red, fontSize: 14),
                 ),
               ],
@@ -138,7 +137,9 @@ class _DependencyCheckDialogState extends State<DependencyCheckDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  icon: Icon(_showLogs ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    _showLogs ? Icons.visibility_off : Icons.visibility,
+                  ),
                   label: Text(_showLogs ? 'Hide Logs' : 'Show Logs'),
                   onPressed: () {
                     setState(() => _showLogs = !_showLogs);
@@ -160,56 +161,87 @@ class _DependencyCheckDialogState extends State<DependencyCheckDialog> {
         if (!_isChecking && !status['python']!) ...[
           TextButton(
             onPressed: () async {
-              final url = Uri.parse('https://www.python.org/ftp/python/3.10.0/python-3.10.0-amd64.exe');
+              final url = Uri.parse(
+                'https://www.python.org/ftp/python/3.10.0/python-3.10.0-amd64.exe',
+              );
               if (await canLaunchUrl(url)) {
                 await launchUrl(url);
-                widget.logsState.addLog('Opened Python download page.', level: LogLevel.info);
+                widget.logsState.addLog(
+                  'Opened Python download page.',
+                  level: LogLevel.info,
+                );
               } else {
-                widget.logsState.addLog('Failed to open Python download page.', level: LogLevel.error);
+                widget.logsState.addLog(
+                  'Failed to open Python download page.',
+                  level: LogLevel.error,
+                );
               }
             },
             child: const Text('Manually Download Python'),
           ),
           ElevatedButton(
-            onPressed: _isInstalling ? null : () {
-              setState(() => _isInstalling = true);
-              widget.logsState.addLog('Starting silent Python installation...', level: LogLevel.info);
-              widget.onInstallDependency?.call('python');
-            },
+            onPressed: _isInstalling
+                ? null
+                : () {
+                    setState(() => _isInstalling = true);
+                    widget.logsState.addLog(
+                      'Starting silent Python installation...',
+                      level: LogLevel.info,
+                    );
+                    widget.onInstallDependency?.call('python');
+                  },
             child: const Text('Silent Install Python'),
           ),
         ],
-        if (!_isChecking && widget.showInstallButton && widget.onInstallDependency != null && status['python']! && nextDependency != null)
+        if (!_isChecking &&
+            widget.showInstallButton &&
+            widget.onInstallDependency != null &&
+            status['python']! &&
+            nextDependency != null)
           ElevatedButton(
-            onPressed: _isInstalling ? null : () {
-              setState(() => _isInstalling = true);
-              widget.logsState.addLog('Starting installation of ${_getDependencyDisplayName(nextDependency)}...', level: LogLevel.info);
-              widget.onInstallDependency?.call(nextDependency);
-            },
+            onPressed: _isInstalling
+                ? null
+                : () {
+                    setState(() => _isInstalling = true);
+                    widget.logsState.addLog(
+                      'Starting installation of ${_getDependencyDisplayName(nextDependency)}...',
+                      level: LogLevel.info,
+                    );
+                    widget.onInstallDependency?.call(nextDependency);
+                  },
             child: Text('Install ${_getDependencyDisplayName(nextDependency)}'),
           ),
         if (!_isChecking)
           TextButton.icon(
             icon: const Icon(Icons.refresh),
             label: const Text('Check Again'),
-            onPressed: _isInstalling ? null : () async {
-              setState(() {
-                _isChecking = true;
-                _isInstalling = false;
-              });
-              widget.logsState.addLog('Checking dependencies again...', level: LogLevel.info);
-              try {
-                final newStatus = await DependencyManager().getDependencyStatus();
-                setState(() {
-                  status = newStatus;
-                  _isChecking = false;
-                });
-                widget.onRetryPressed();
-              } catch (e) {
-                widget.logsState.addLog('Error re-checking dependencies: $e', level: LogLevel.error);
-                setState(() => _isChecking = false);
-              }
-            },
+            onPressed: _isInstalling
+                ? null
+                : () async {
+                    setState(() {
+                      _isChecking = true;
+                      _isInstalling = false;
+                    });
+                    widget.logsState.addLog(
+                      'Checking dependencies again...',
+                      level: LogLevel.info,
+                    );
+                    try {
+                      final newStatus = await DependencyManager()
+                          .getDependencyStatus();
+                      setState(() {
+                        status = newStatus;
+                        _isChecking = false;
+                      });
+                      widget.onRetryPressed();
+                    } catch (e) {
+                      widget.logsState.addLog(
+                        'Error re-checking dependencies: $e',
+                        level: LogLevel.error,
+                      );
+                      setState(() => _isChecking = false);
+                    }
+                  },
           ),
       ],
     );

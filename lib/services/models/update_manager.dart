@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:package_info_plus/package_info_plus.dart';
-import '../services/cache_manager.dart';
-import '../services/exceptions.dart';
+import '../data/cache_manager.dart';
+import '../shared/exceptions.dart';
 
 class UpdateManager {
   static const String _updateManifestUrl = 'https://api.github.com/repos/ShahFaisalGFG/cc_gen_ultimate/releases/latest';
@@ -187,7 +187,7 @@ class UpdateManager {
     final version2 = v2.split('.').map(int.parse).toList();
 
     for (var i = 0; i < 3; i++) {
-      final diff = (version1[i] ?? 0) - (version2[i] ?? 0);
+      final diff = version1[i] - version2[i];
       if (diff != 0) return diff;
     }
     return 0;

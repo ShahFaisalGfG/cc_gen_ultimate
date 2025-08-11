@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import '../services/exceptions.dart';
+import '../shared/exceptions.dart';
 
 class PlatformService {
   static Future<String> getAppDirectory() async {

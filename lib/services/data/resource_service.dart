@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:archive/archive.dart';
-import 'platform_service.dart';
-import 'exceptions.dart';
+import '../core/platform_service.dart';
+import '../shared/exceptions.dart';
 
 class ResourceService {
   static const String _assetsPath = 'assets/bundled';

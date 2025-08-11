@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../logic/preferences.dart';
-import '../ui/about_section.dart';
-import '../ui/bottom_bar.dart';
-import '../ui/widgets/logs_panel.dart';
-import '../ui/generate_cc_tab.dart';
-import '../ui/translate_cc_tab.dart';
-import '../ui/models_tab.dart';
+import '../../logic/preferences.dart';
+import '../widgets/about_section.dart';
+import '../widgets/bottom_bar.dart';
+import '../widgets/logs_widget/logs_panel.dart';
+import '../Tabs/generate_cc_tab.dart';
+import '../Tabs/translate_cc_tab.dart';
+import '../Tabs/models_tab.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeMode) updateThemeMode;

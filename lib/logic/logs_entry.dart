@@ -48,26 +48,3 @@ class LogEntry {
     );
   }
 }
-
-class LogsManager {
-  final List<LogEntry> logs = [];
-  bool showLogs = false;
-
-  void add(String message, {LogLevel level = LogLevel.info}) {
-    logs.add(LogEntry(
-      timestamp: DateTime.now(),
-      message: message,
-      level: level,
-    ));
-    showLogs = true;
-  }
-
-  void clear() {
-    logs.clear();
-    showLogs = false;
-  }
-
-  List<LogEntry> getLogs() {
-    return List.unmodifiable(logs);
-  }
-}

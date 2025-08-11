@@ -4,8 +4,8 @@ import 'package:cc_gen_ultimate/models/model_info.dart';
 import 'package:cc_gen_ultimate/controllers/model_controller.dart';
 import 'package:intl/intl.dart';
 // Add these imports for logs panel
-import '../../state/logs_state.dart';
-import '../../ui/widgets/logs_panel.dart';
+import '../../../state/logs_state.dart';
+import '../widgets/logs_widget/logs_panel.dart';
 
 class ModelsAndLanguagesTab extends StatefulWidget {
   const ModelsAndLanguagesTab({super.key});

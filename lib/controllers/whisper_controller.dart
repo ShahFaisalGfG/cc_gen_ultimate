@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import '../models/whisper_model.dart';
-import '../services/whisper_service.dart';
-import '../services/dependency_manager.dart';
+import '../services/ai/whisper_service.dart';
+import '../services/ifrastructure/dependency_manager.dart';
 
 class WhisperController extends ChangeNotifier {
   final _logger = Logger('WhisperController');

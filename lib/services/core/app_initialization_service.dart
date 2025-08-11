@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 
-import '../services/configuration_service.dart';
-import '../services/dependency_manager.dart';
-import '../state/logs_state.dart';
-import '../logic/logs.dart';
-import '../ui/widgets/dependency_check_dialog.dart';
-import '../ui/widgets/dependency_install_progress.dart';
-import '../main.dart';
+import 'configuration_service.dart';
+import '../ifrastructure/dependency_manager.dart';
+import '../../state/logs_state.dart';
+import '../../logic/logs_entry.dart';
+import '../../ui/widgets/dependency_check_dialog.dart';
+import '../../ui/widgets/dependency_install_progress.dart';
+import '../../main.dart';
 
 class AppInitializationService {
   final ConfigurationService _configService = ConfigurationService();
@@ -20,6 +20,7 @@ class AppInitializationService {
     BuildContext context,
     VoidCallback onInitialized,
   ) async {
+    _logsState.addLog('DEBUG: initializeApp called', level: LogLevel.info);
     // Check dependencies
     try {
       final status = await _configService.checkDependencies();
@@ -139,6 +140,10 @@ class AppInitializationService {
     Completer<void> completer,
     VoidCallback onInitialized,
   ) {
+    _logsState.addLog(
+      'DEBUG: _showDependencyDialog called',
+      level: LogLevel.info,
+    );
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -161,7 +166,19 @@ class AppInitializationService {
         },
         showInstallButton: status['python']! && !status.values.every((v) => v),
         onInstallDependency: (dependency) async {
-          await _installDependency(context, dependency);
+          Navigator.pop(dialogContext); // Close the dependency check dialog
+          await _installDependency(
+            context,
+            dependency,
+            onAllComplete: () {
+              _logsState.addLog(
+                'DEBUG: onAllComplete callback executed',
+                level: LogLevel.success,
+              );
+              onInitialized(); // Call the original callback
+              completer.complete(); // Complete the completer
+            },
+          );
         },
       ),
     );
@@ -270,8 +287,9 @@ class AppInitializationService {
 
   Future<void> _installDependency(
     BuildContext context,
-    String dependency,
-  ) async {
+    String dependency, {
+    VoidCallback? onAllComplete,
+  }) async {
     try {
       final dependencyManager = DependencyManager();
       bool isRetrying = true;
@@ -287,7 +305,7 @@ class AppInitializationService {
             currentStepIndex: 1,
             details: 'Installing $dependency...',
             showInstallButton: false,
-            showNextButton: false,
+            showNextButton: true, // Enable next button
             logsStream: dependencyManager.installDependency(dependency).map((
               step,
             ) {
@@ -316,6 +334,73 @@ class AppInitializationService {
               );
               Navigator.pop(context, 'retry');
             },
+            // Add callback to install next dependency
+            onInstallDependency: (nextDep) async {
+              Navigator.pop(context, 'next');
+              await _installDependency(context, nextDep);
+            },
+            // Add callback for when all dependencies are done
+            onFinish: () async {
+              _logsState.addLog(
+                'All dependencies installed successfully.',
+                level: LogLevel.success,
+              );
+
+              // Check if all dependencies are actually installed
+              if (onAllComplete != null) {
+                _logsState.addLog(
+                  'DEBUG: onAllComplete callback is available, checking final status...',
+                  level: LogLevel.info,
+                );
+                try {
+                  final finalStatus = await _configService.checkDependencies();
+                  _logsState.addLog(
+                    'DEBUG: Final status check result: $finalStatus',
+                    level: LogLevel.info,
+                  );
+                  final allInstalled = finalStatus.values.every(
+                    (installed) => installed,
+                  );
+                  _logsState.addLog(
+                    'DEBUG: All dependencies installed: $allInstalled',
+                    level: LogLevel.info,
+                  );
+
+                  if (allInstalled) {
+                    _logsState.addLog(
+                      'DEBUG: All dependencies confirmed, calling onAllComplete and closing dialog',
+                      level: LogLevel.success,
+                    );
+                    // Call the completion callback first
+                    onAllComplete();
+                    // Then close the dialog
+                    Navigator.pop(context, 'complete');
+                    return;
+                  } else {
+                    _logsState.addLog(
+                      'DEBUG: Not all dependencies installed, falling back to finish',
+                      level: LogLevel.warning,
+                    );
+                  }
+                } catch (e) {
+                  _logsState.addLog(
+                    'Error checking final dependency status: $e',
+                    level: LogLevel.error,
+                  );
+                }
+              } else {
+                _logsState.addLog(
+                  'DEBUG: onAllComplete callback is null',
+                  level: LogLevel.warning,
+                );
+              }
+
+              _logsState.addLog(
+                'DEBUG: Falling back to regular finish navigation',
+                level: LogLevel.info,
+              );
+              Navigator.pop(context, 'finish');
+            },
           ),
         );
 
@@ -325,13 +410,27 @@ class AppInitializationService {
         } else if (result == 'retry') {
           isRetrying = true;
           continue;
+        } else if (result == 'next') {
+          // Next dependency installation was triggered, exit this loop
+          isRetrying = false;
+          break;
+        } else if (result == 'finish') {
+          // All dependencies are installed, exit this loop
+          isRetrying = false;
+          break;
+        } else if (result == 'complete') {
+          // All dependencies are installed and verified, exit without re-checking
+          isRetrying = false;
+          shouldContinue = false;
+          break;
         } else {
           isRetrying = false;
         }
       }
 
-      if (context.mounted && shouldContinue) {
-        // Re-check dependencies after installation
+      // Only re-check dependencies if we should continue AND we don't have onAllComplete callback
+      if (context.mounted && shouldContinue && onAllComplete == null) {
+        // Re-check dependencies after installation only for splash flow
         checkDependenciesForSplash(context, () {});
       }
     } catch (e) {
@@ -372,6 +471,7 @@ class AppInitializationService {
             details: 'Installing $dependency...',
             showInstallButton: false,
             showNextButton: true,
+            dependencyStatus: status, // Pass current status
             logsStream: dependencyManager.installDependency(dependency).map((
               step,
             ) {
@@ -402,30 +502,11 @@ class AppInitializationService {
             },
             onInstallDependency: (nextDep) async {
               Navigator.pop(context, 'next');
-              await showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => DependencyInstallProgress(
-                  currentStep: nextDep,
-                  totalSteps: status.length,
-                  currentStepIndex: status.keys.toList().indexOf(nextDep) + 1,
-                  details: 'Installing $nextDep...',
-                  logsState: _logsState,
-                  logsStream: dependencyManager
-                      .installDependency(nextDep)
-                      .map((step) => step.logs ?? step.details),
-                  onInstallDependency: (nextDep) async {
-                    Navigator.pop(context);
-                    await checkDependenciesForSplash(context, onSplashComplete);
-                  },
-                  onFinish: () {
-                    _logsState.addLog(
-                      'All dependencies installed successfully.',
-                      level: LogLevel.success,
-                    );
-                    checkDependenciesForSplash(context, onSplashComplete);
-                  },
-                ),
+              await _installDependencyForSplash(
+                context,
+                nextDep,
+                status,
+                onSplashComplete,
               );
             },
             onFinish: () {
@@ -433,6 +514,7 @@ class AppInitializationService {
                 'All dependencies installed successfully.',
                 level: LogLevel.success,
               );
+              Navigator.pop(context, 'finish');
               checkDependenciesForSplash(context, onSplashComplete);
             },
           ),

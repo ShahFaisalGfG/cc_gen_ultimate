@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../state/logs_state.dart';
-import '../../logic/logs.dart';
+import '../../../state/logs_state.dart';
+import '../../../logic/logs_entry.dart';
 
 class LogsPanel extends StatelessWidget {
   final bool showLogs;

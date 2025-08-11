@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/whisper_model.dart';
-import '../services/whisper_service.dart';
-import '../services/configuration_service.dart';
+import '../services/ai/whisper_service.dart';
+import '../services/core/configuration_service.dart';
 
 class WhisperState extends ChangeNotifier {
   List<WhisperModel> _installedModels = [];

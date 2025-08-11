@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
-import '../../state/logs_state.dart';
-import '../../ui/widgets/logs_panel.dart';
+import '../../../state/logs_state.dart';
+import '../widgets/logs_widget/logs_panel.dart';
 
 
 class GenerateCCTab extends StatefulWidget {

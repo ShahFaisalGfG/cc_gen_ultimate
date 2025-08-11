@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../services/app_initialization_service.dart';
-import '../ui/splash_screen.dart';
-import '../ui/main_screen.dart';
+import '../../services/core/app_initialization_service.dart';
+import '../screens/splash_screen.dart';
+import '../screens/main_screen.dart';
 
 class SplashScreenWrapper extends StatefulWidget {
   final void Function(ThemeMode) updateThemeMode;

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cc_gen_ultimate/models/model_info.dart';
-import 'package:cc_gen_ultimate/services/model_service.dart';
+import 'package:cc_gen_ultimate/services/models/model_service.dart';
 
 class ModelController extends ChangeNotifier {
   final ModelService _modelService = ModelService();

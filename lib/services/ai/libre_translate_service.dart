@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import '../models/translation_request.dart';
-import 'configuration_service.dart';
-import 'exceptions.dart';
+import '../../models/translation_request.dart';
+import '../core/configuration_service.dart';
+import '../shared/exceptions.dart';
 
 class LibreTranslateService {
   static final LibreTranslateService _instance = LibreTranslateService._internal();

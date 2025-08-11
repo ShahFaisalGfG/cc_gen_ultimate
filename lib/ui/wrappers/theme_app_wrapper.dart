@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../services/configuration_service.dart';
-import '../logic/theme.dart';
-import '../services/app_initialization_service.dart';
-import 'main_screen.dart';
+import '../../services/core/configuration_service.dart';
+import '../../logic/theme_manager.dart';
+import '../../services/core/app_initialization_service.dart';
+import '../screens/main_screen.dart';
 import 'splash_screen_wrapper.dart';
 
 class ThemeAppWrapper extends StatefulWidget {

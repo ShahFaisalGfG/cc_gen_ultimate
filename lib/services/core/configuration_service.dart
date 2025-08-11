@@ -5,9 +5,9 @@ import 'package:logging/logging.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 
-import 'python_environment_service.dart';
-import 'dependency_manager.dart';
-import '../models/dependency_install_step.dart';
+import '../ifrastructure/python_environment_service.dart';
+import '../ifrastructure/dependency_manager.dart';
+import '../../models/dependency_install_step.dart';
 
 class ConfigurationService {
   static final ConfigurationService _instance =

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../logic/logs.dart';
+import '../logic/logs_entry.dart';
 
 class LogsState extends ChangeNotifier {
   final List<LogEntry> _logs = [];

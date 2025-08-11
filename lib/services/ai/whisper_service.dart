@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:async';
 import 'package:path/path.dart' as path;
 import 'package:logging/logging.dart';
-import '../models/whisper_model.dart';
-import '../utils/process_utils.dart';
-import 'exceptions.dart';
+import '../../models/whisper_model.dart';
+import '../../utils/process_utils.dart';
+import '../shared/exceptions.dart';
 
 class WhisperService {
   static const String _whisperExecutable = 'faster-whisper';
@@ -12,9 +12,9 @@ class WhisperService {
     Platform.environment['APPDATA'] ?? '',
     'cc_gen_ultimate',
     'models',
-    'faster-whisper'
+    'faster-whisper',
   );
-  
+
   static final _logger = Logger('WhisperService');
   static const _maxRetries = 3;
   static const _retryDelay = Duration(seconds: 2);
@@ -37,11 +37,13 @@ class WhisperService {
       if (entity is File && entity.path.endsWith('.pt')) {
         final name = path.basenameWithoutExtension(entity.path);
         final size = await entity.length();
-        models.add(WhisperModel(
-          name: name,
-          size: _formatSize(size),
-          status: 'Completed',
-        ));
+        models.add(
+          WhisperModel(
+            name: name,
+            size: _formatSize(size),
+            status: 'Completed',
+          ),
+        );
       }
     }
     return models;
@@ -79,7 +81,6 @@ class WhisperService {
       await modelDir.create(recursive: true);
     }
 
-    final modelPath = path.join(_modelsDir, '$modelName.pt');
     _logger.info('Starting download for model: $modelName');
     onStatus('Downloading model $modelName...');
 
@@ -91,22 +92,26 @@ class WhisperService {
           await Future.delayed(_retryDelay);
         }
 
-        final process = await Process.start(
-          _whisperExecutable,
-          ['--model', modelName, '--download-only'],
-          workingDirectory: _modelsDir,
-        );
+        final process = await Process.start(_whisperExecutable, [
+          '--model',
+          modelName,
+          '--download-only',
+        ], workingDirectory: _modelsDir);
 
-        process.stdout.transform(ProcessUtils.progressExtractor()).listen(
-          (progress) {
-            onProgress(progress);
-            _logger.fine('Download progress: ${(progress * 100).toStringAsFixed(1)}%');
-          },
-          onError: (error) {
-            _logger.warning('Progress tracking error: $error');
-            onStatus('Error tracking progress: $error');
-          },
-        );
+        process.stdout
+            .transform(ProcessUtils.progressExtractor())
+            .listen(
+              (progress) {
+                onProgress(progress);
+                _logger.fine(
+                  'Download progress: ${(progress * 100).toStringAsFixed(1)}%',
+                );
+              },
+              onError: (error) {
+                _logger.warning('Progress tracking error: $error');
+                onStatus('Error tracking progress: $error');
+              },
+            );
 
         final exitCode = await process.exitCode;
         if (exitCode == 0) {
@@ -116,7 +121,7 @@ class WhisperService {
         } else {
           throw ModelDownloadException(
             'Process exited with code $exitCode',
-            code: 'EXIT_CODE_$exitCode'
+            code: 'EXIT_CODE_$exitCode',
           );
         }
       } catch (e) {
@@ -126,7 +131,7 @@ class WhisperService {
           onStatus('Failed: Maximum retry attempts reached');
           throw ModelDownloadException(
             'Failed to download model after $_maxRetries attempts',
-            originalError: e
+            originalError: e,
           );
         }
       }
@@ -148,11 +153,11 @@ class WhisperService {
 
     final args = [
       inputPath,
-      '--model', modelName,
-      '--output_format', outputFormat.replaceAll('.', ''),
-      if (language != 'auto') ...[
-        '--language', language,
-      ],
+      '--model',
+      modelName,
+      '--output_format',
+      outputFormat.replaceAll('.', ''),
+      if (language != 'auto') ...['--language', language],
     ];
 
     _logger.info('Starting transcription for: ${path.basename(inputPath)}');
@@ -163,42 +168,53 @@ class WhisperService {
       try {
         if (attempt > 1) {
           _logger.info('Retry attempt $attempt for transcription');
-          onStatus('Retrying transcription... (Attempt $attempt of $_maxRetries)');
+          onStatus(
+            'Retrying transcription... (Attempt $attempt of $_maxRetries)',
+          );
           await Future.delayed(_retryDelay);
         }
 
         final process = await Process.start(_whisperExecutable, args);
         var hasProgress = false;
         var lastProgressUpdate = DateTime.now();
-        
-        process.stdout.transform(ProcessUtils.progressExtractor()).listen(
-          (progress) {
-            hasProgress = true;
-            lastProgressUpdate = DateTime.now();
-            onProgress(progress);
-            _logger.fine('Transcription progress: ${(progress * 100).toStringAsFixed(1)}%');
-          },
-          onError: (error) {
-            _logger.warning('Progress tracking error: $error');
-            onLog('Error tracking progress: $error');
-          },
-        );
 
-        process.stderr.transform(ProcessUtils.logExtractor()).listen(
-          (log) {
-            _logger.fine('Faster Whisper output: $log');
-            onLog(log);
-          },
-          onError: (error) {
-            _logger.warning('Error reading process output: $error');
-            onLog('Error: $error');
-          },
-        );
+        process.stdout
+            .transform(ProcessUtils.progressExtractor())
+            .listen(
+              (progress) {
+                hasProgress = true;
+                lastProgressUpdate = DateTime.now();
+                onProgress(progress);
+                _logger.fine(
+                  'Transcription progress: ${(progress * 100).toStringAsFixed(1)}%',
+                );
+              },
+              onError: (error) {
+                _logger.warning('Progress tracking error: $error');
+                onLog('Error tracking progress: $error');
+              },
+            );
+
+        process.stderr
+            .transform(ProcessUtils.logExtractor())
+            .listen(
+              (log) {
+                _logger.fine('Faster Whisper output: $log');
+                onLog(log);
+              },
+              onError: (error) {
+                _logger.warning('Error reading process output: $error');
+                onLog('Error: $error');
+              },
+            );
 
         // Monitor process health
         Timer.periodic(Duration(seconds: 30), (timer) {
-          if (!hasProgress && DateTime.now().difference(lastProgressUpdate).inMinutes >= 5) {
-            _logger.warning('No progress for 5 minutes, considering process stuck');
+          if (!hasProgress &&
+              DateTime.now().difference(lastProgressUpdate).inMinutes >= 5) {
+            _logger.warning(
+              'No progress for 5 minutes, considering process stuck',
+            );
             process.kill();
             timer.cancel();
           }
@@ -212,17 +228,19 @@ class WhisperService {
         } else {
           throw TranscriptionException(
             'Process exited with code $exitCode',
-            code: 'EXIT_CODE_$exitCode'
+            code: 'EXIT_CODE_$exitCode',
           );
         }
       } catch (e) {
         _logger.warning('Transcription attempt $attempt failed: $e');
         if (attempt == _maxRetries) {
-          _logger.severe('All transcription attempts failed for: ${path.basename(inputPath)}');
+          _logger.severe(
+            'All transcription attempts failed for: ${path.basename(inputPath)}',
+          );
           onStatus('Failed: Maximum retry attempts reached');
           throw TranscriptionException(
             'Failed to transcribe after $_maxRetries attempts',
-            originalError: e
+            originalError: e,
           );
         }
       }

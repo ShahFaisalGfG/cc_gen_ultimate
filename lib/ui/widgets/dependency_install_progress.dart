@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/logs_state.dart';
-import '../../logic/logs.dart';
-import 'logs_panel.dart';
+import '../../logic/logs_entry.dart';
+import '../../services/ifrastructure/dependency_manager.dart';
+import 'logs_widget/logs_panel.dart';
 
 class DependencyInstallProgress extends StatefulWidget {
   final String currentStep;
@@ -18,6 +19,7 @@ class DependencyInstallProgress extends StatefulWidget {
   final bool showNextButton;
   final Function(String)? onInstallDependency;
   final VoidCallback? onFinish;
+  final Map<String, bool>? dependencyStatus; // Add this to track current status
 
   const DependencyInstallProgress({
     super.key,
@@ -33,10 +35,12 @@ class DependencyInstallProgress extends StatefulWidget {
     this.showNextButton = false,
     this.onInstallDependency,
     this.onFinish,
+    this.dependencyStatus,
   });
 
   @override
-  State<DependencyInstallProgress> createState() => _DependencyInstallProgressState();
+  State<DependencyInstallProgress> createState() =>
+      _DependencyInstallProgressState();
 }
 
 class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
@@ -46,15 +50,7 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
   String? _errorMessage;
   double? _progress;
   StreamSubscription<String>? _logsSubscription;
-
-  // Ordered sequence of dependencies
-  static const List<String> dependencySequence = [
-    'python',
-    'pip',
-    'ffmpeg',
-    'faster-whisper',
-    'libretranslate'
-  ];
+  final DependencyManager _dependencyManager = DependencyManager();
 
   String _getDependencyDisplayName(String key) {
     switch (key) {
@@ -73,12 +69,26 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
     }
   }
 
-  String? _getNextMissingDependency() {
-    final currentIndex = dependencySequence.indexOf(widget.currentStep);
-    if (currentIndex < dependencySequence.length - 1) {
-      return dependencySequence[currentIndex + 1];
+  Future<String?> _getNextMissingDependency() async {
+    try {
+      // Always fetch fresh dependency status to get the most up-to-date information
+      // The status passed to the widget might be stale after installation completes
+      final status = await _dependencyManager.getDependencyStatus();
+
+      // Use helper method from dependency manager to get next missing dependency
+      final nextDep = _dependencyManager.getNextMissingDependency(
+        status,
+        widget.currentStep,
+      );
+
+      return nextDep;
+    } catch (e) {
+      widget.logsState.addLog(
+        'Error checking dependencies: $e',
+        level: LogLevel.error,
+      );
+      return null;
     }
-    return null;
   }
 
   @override
@@ -109,10 +119,10 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
     final lowercaseLog = log.toLowerCase();
     if (lowercaseLog.contains('failed') || lowercaseLog.contains('error')) {
       return LogLevel.error;
-    } else if (lowercaseLog.contains('success') || 
-              lowercaseLog.contains('completed') ||
-              lowercaseLog.contains('installation successful') ||
-              lowercaseLog.contains('installed')) {
+    } else if (lowercaseLog.contains('success') ||
+        lowercaseLog.contains('completed') ||
+        lowercaseLog.contains('installation successful') ||
+        lowercaseLog.contains('installed')) {
       return LogLevel.success;
     }
     return LogLevel.info;
@@ -134,9 +144,9 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
               _errorMessage = log;
               _progress = null;
             });
-          } else if (level == LogLevel.success || 
-                    (log.toLowerCase().contains('installation successful') || 
-                     log.toLowerCase().contains('installation completed'))) {
+          } else if (level == LogLevel.success ||
+              (log.toLowerCase().contains('installation successful') ||
+                  log.toLowerCase().contains('installation completed'))) {
             // Debug log: widget.logsState.addLog('Success detected - Setting progress to 1.0', level: LogLevel.info);
             setState(() {
               _progress = 1.0;
@@ -145,7 +155,7 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
             // Debug info about next dependency (commented for production)
             // final nextDep = _getNextMissingDependency();
             // widget.logsState.addLog(
-            //   'Next dependency: ${nextDep ?? "none"}, Can install: ${widget.onInstallDependency != null}', 
+            //   'Next dependency: ${nextDep ?? "none"}, Can install: ${widget.onInstallDependency != null}',
             //   level: LogLevel.info
             // );
           } else {
@@ -165,7 +175,10 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
         },
         onDone: () {
           if (!_isCancelled && !_isError) {
-            widget.logsState.addLog('${widget.currentStep} installation completed.', level: LogLevel.success);
+            widget.logsState.addLog(
+              '${widget.currentStep} installation completed.',
+              level: LogLevel.success,
+            );
             setState(() {
               _progress = 1.0;
               _isError = false;
@@ -173,7 +186,7 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
             // Debug info about installation completion (commented for production)
             // final nextDep = _getNextMissingDependency();
             // widget.logsState.addLog(
-            //   'Installation complete. Next dependency: ${nextDep ?? "none"}, Can install: ${widget.onInstallDependency != null}', 
+            //   'Installation complete. Next dependency: ${nextDep ?? "none"}, Can install: ${widget.onInstallDependency != null}',
             //   level: LogLevel.info
             // );
           }
@@ -191,7 +204,9 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            child: Text('Installing ${widget.currentStep} (${widget.currentStepIndex}/${widget.totalSteps})'),
+            child: Text(
+              'Installing ${widget.currentStep} (${widget.currentStepIndex}/${widget.totalSteps})',
+            ),
           ),
           TextButton.icon(
             onPressed: () {
@@ -212,7 +227,10 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Step: ${_getDependencyDisplayName(widget.currentStep)}', style: theme.textTheme.titleMedium),
+            Text(
+              'Step: ${_getDependencyDisplayName(widget.currentStep)}',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Text(widget.details),
             const SizedBox(height: 16),
@@ -236,7 +254,10 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
                   color: theme.colorScheme.error.withAlpha(25),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: SelectableText(_errorMessage!, style: TextStyle(color: theme.colorScheme.error)),
+                child: SelectableText(
+                  _errorMessage!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
               ),
             ],
           ],
@@ -259,40 +280,45 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
             child: const Text('Retry'),
           ),
         if (!_isError && _progress == 1.0) ...[
-          // Debug info about button conditions (commented for production)
-          // Builder(
-          //   builder: (context) {
-          //     widget.logsState.addLog(
-          //       'Button conditions: isError: $_isError, progress: $_progress, ' +
-          //       'nextDep: ${_getNextMissingDependency() ?? "none"}, ' +
-          //       'canInstall: ${widget.onInstallDependency != null}',
-          //       level: LogLevel.info
-          //     );
-          //     return const SizedBox.shrink();
-          //   }
-          // ),
-          // Show "Install Next Dependency" button if there's a next dependency
-          if (_getNextMissingDependency() != null && widget.onInstallDependency != null)
-            ElevatedButton(
-              onPressed: () {
-                final nextDep = _getNextMissingDependency();
-                if (nextDep != null) {
-                  _logsSubscription?.cancel(); // Cancel subscription without marking as aborted
-                  Navigator.pop(context);
-                  widget.onInstallDependency?.call(nextDep);
-                }
-              },
-              child: Text('Install ${_getDependencyDisplayName(_getNextMissingDependency()!)}'),
-            ),
-          // Show "Finish" button if this was the last dependency
-          if (_getNextMissingDependency() == null && widget.onFinish != null)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-                widget.onFinish?.call();
-              },
-              child: const Text('Finish'),
-            ),
+          // Dynamic buttons based on next missing dependency
+          FutureBuilder<String?>(
+            future: _getNextMissingDependency(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              }
+
+              final nextDep = snapshot.data;
+
+              if (nextDep != null && widget.onInstallDependency != null) {
+                // Show "Install Next Dependency" button
+                return ElevatedButton(
+                  onPressed: () {
+                    _logsSubscription
+                        ?.cancel(); // Cancel subscription without marking as aborted
+                    Navigator.pop(context);
+                    widget.onInstallDependency?.call(nextDep);
+                  },
+                  child: Text('Install ${_getDependencyDisplayName(nextDep)}'),
+                );
+              } else if (widget.onFinish != null) {
+                // Show "Finish" button if no more dependencies
+                return ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.onFinish?.call();
+                  },
+                  child: const Text('Finish'),
+                );
+              }
+
+              return const SizedBox.shrink();
+            },
+          ),
         ],
         if (widget.showInstallButton)
           ElevatedButton(
@@ -302,5 +328,4 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
       ],
     );
   }
-
 }
