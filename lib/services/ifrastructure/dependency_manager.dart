@@ -9,12 +9,6 @@ import '../../models/dependency_install_step.dart';
 class DependencyManager {
   final PythonEnvironmentService _pythonEnv = PythonEnvironmentService();
 
-  // ignore: unused_field
-  static const Map<String, String> _requiredPackages = {
-    'faster-whisper': '1.1.1',
-    'libretranslate': '1.7.2',
-  };
-
   Future<Map<String, bool>> getDependencyStatus() async {
     final status = <String, bool>{
       'python': false,
