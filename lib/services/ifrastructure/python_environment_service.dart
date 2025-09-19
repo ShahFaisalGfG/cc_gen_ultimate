@@ -38,8 +38,8 @@ class PythonEnvironmentService {
     final minor = int.parse(match.group(2)!);
     
     // Check if version is >= 3.8
-    // Accept only Python 3.8.x, 3.9.x, or 3.10.x
-    return major == 3 && (minor == 8 || minor == 9 || minor == 10);
+    // Accept only Python 3.8.x, 3.9.x, 3.10.x, or 3.11.x
+    return major == 3 && (minor == 8 || minor == 9 || minor == 10 || minor == 11);
   }
 
   Future<bool> installPackage(String package, {String? version}) async {

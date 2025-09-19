@@ -55,7 +55,7 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
   String _getDependencyDisplayName(String key) {
     switch (key) {
       case 'python':
-        return 'Python 3.8, 3.9, or 3.10';
+        return 'Python 3.8, 3.9, 3.10, or 3.11';
       case 'pip':
         return 'pip (Package Installer)';
       case 'faster-whisper':
@@ -119,6 +119,9 @@ class _DependencyInstallProgressState extends State<DependencyInstallProgress> {
     final lowercaseLog = log.toLowerCase();
     if (lowercaseLog.contains('failed') || lowercaseLog.contains('error')) {
       return LogLevel.error;
+    } else if (lowercaseLog.contains('uninstalled') ||
+        lowercaseLog.contains('uninstalled successfully')) {
+      return LogLevel.warning;
     } else if (lowercaseLog.contains('success') ||
         lowercaseLog.contains('completed') ||
         lowercaseLog.contains('installation successful') ||

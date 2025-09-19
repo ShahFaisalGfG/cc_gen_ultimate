@@ -54,7 +54,7 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedSourceLanguage,
+                  initialValue: _selectedSourceLanguage,
                   decoration: InputDecoration(labelText: 'Source Language'),
                   items: ['English', 'Spanish', 'French', 'German', 'Chinese']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l)))
@@ -65,7 +65,7 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
               SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedTargetLanguage,
+                  initialValue: _selectedTargetLanguage,
                   decoration: InputDecoration(labelText: 'Target Language'),
                   items: ['English', 'Spanish', 'French', 'German', 'Chinese']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l)))
@@ -76,7 +76,7 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
               SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedFormat,
+                  initialValue: _selectedFormat,
                   decoration: InputDecoration(labelText: 'Format'),
                   items: ['.srt', '.vtt', '.txt']
                       .map((f) => DropdownMenuItem(value: f, child: Text(f)))

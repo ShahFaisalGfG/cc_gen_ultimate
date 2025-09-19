@@ -17,7 +17,7 @@ where winget >nul 2>&1 || (
 )
 
 echo Installing Python...
-winget install --id Python.Python.3.10 --scope user --exact --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
+winget install --id Python.Python.3.11 --scope user --exact --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
 if %errorLevel% neq 0 (
     echo Installation failed: Unable to install Python
     exit /b 1

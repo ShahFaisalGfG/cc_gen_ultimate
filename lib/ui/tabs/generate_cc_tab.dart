@@ -59,7 +59,7 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedModel,
+                  initialValue: _selectedModel,
                   decoration: InputDecoration(labelText: 'Model'),
                   items: ['tiny', 'base', 'small', 'medium', 'large']
                       .map((m) => DropdownMenuItem(value: m, child: Text(m)))
@@ -70,7 +70,7 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
               SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedLanguage,
+                  initialValue: _selectedLanguage,
                   decoration: InputDecoration(labelText: 'Language'),
                   items: ['English', 'Spanish', 'French', 'German', 'Chinese']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l)))
@@ -81,7 +81,7 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
               SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedFormat,
+                  initialValue: _selectedFormat,
                   decoration: InputDecoration(labelText: 'Format'),
                   items: ['.srt', '.vtt', '.txt']
                       .map((f) => DropdownMenuItem(value: f, child: Text(f)))
