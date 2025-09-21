@@ -29,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
   String _translateFrom = 'English';
   String _translateTo = 'None';
   String _selectedFormat = '.srt';
-  bool _showLogs = false;
+  final bool _showLogs = false;
 
   @override
   void initState() {
@@ -112,15 +112,15 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ],
           ),
-          IconButton(
-            icon: Icon(_showLogs ? Icons.visibility_off : Icons.visibility),
-            onPressed: () {
-              setState(() {
-                _showLogs = !_showLogs;
-              });
-            },
-            tooltip: _showLogs ? 'Hide Logs' : 'Show Logs',
-          ),
+          // IconButton(
+          //   icon: Icon(_showLogs ? Icons.visibility_off : Icons.visibility),
+          //   onPressed: () {
+          //     setState(() {
+          //       _showLogs = !_showLogs;
+          //     });
+          //   },
+          //   tooltip: _showLogs ? 'Hide Logs' : 'Show Logs',
+          // ),
         ],
       ),
       body: BottomBar(

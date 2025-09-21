@@ -4,12 +4,11 @@ import 'package:provider/provider.dart';
 import '../../../state/logs_state.dart';
 import '../widgets/logs_widget/logs_panel.dart';
 
-
 class GenerateCCTab extends StatefulWidget {
   final LogsState logsState;
 
   GenerateCCTab({super.key, LogsState? logsState})
-      : logsState = logsState ?? LogsState();
+    : logsState = logsState ?? LogsState();
 
   @override
   State<GenerateCCTab> createState() => _GenerateCCTabState();
@@ -27,7 +26,18 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
-      allowedExtensions: ['mp3', 'wav', 'mp4', 'mkv', 'avi', 'mov', 'flac', 'aac', 'ogg', 'webm'],
+      allowedExtensions: [
+        'mp3',
+        'wav',
+        'mp4',
+        'mkv',
+        'avi',
+        'mov',
+        'flac',
+        'aac',
+        'ogg',
+        'webm',
+      ],
     );
     if (result != null) {
       setState(() {
@@ -64,7 +74,8 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
                   items: ['tiny', 'base', 'small', 'medium', 'large']
                       .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedModel = v ?? 'tiny'),
+                  onChanged: (v) =>
+                      setState(() => _selectedModel = v ?? 'tiny'),
                 ),
               ),
               SizedBox(width: 16),
@@ -75,7 +86,8 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
                   items: ['English', 'Spanish', 'French', 'German', 'Chinese']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l)))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedLanguage = v ?? 'English'),
+                  onChanged: (v) =>
+                      setState(() => _selectedLanguage = v ?? 'English'),
                 ),
               ),
               SizedBox(width: 16),
@@ -86,7 +98,8 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
                   items: ['.srt', '.vtt', '.txt']
                       .map((f) => DropdownMenuItem(value: f, child: Text(f)))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedFormat = v ?? '.srt'),
+                  onChanged: (v) =>
+                      setState(() => _selectedFormat = v ?? '.srt'),
                 ),
               ),
             ],
@@ -94,44 +107,76 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
         ),
         // Main body: drag-and-drop + add button + file list
         Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.add),
+                      label: Text('+ Add'),
+                      onPressed: _pickFiles,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Stack(
                     children: [
-                      Icon(Icons.cloud_upload, size: 48, color: Colors.purpleAccent),
-                      SizedBox(height: 8),
-                      Text('Drag & drop audio/video files here', style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        icon: Icon(Icons.add),
-                        label: Text('+ Add'),
-                        onPressed: _pickFiles,
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cloud_upload,
+                              size: 48,
+                              color: Colors.purpleAccent,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Drag & drop audio/video files here',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              icon: Icon(Icons.add),
+                              label: Text('+ Add'),
+                              onPressed: _pickFiles,
+                            ),
+                          ],
+                        ),
                       ),
+                      if (_files.isNotEmpty)
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _files.map((f) => Text(f)).toList(),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (_files.isNotEmpty)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _files.map((f) => Text(f)).toList(),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         // Footer area
@@ -156,12 +201,12 @@ class _GenerateCCTabState extends State<GenerateCCTab> {
           ),
         ),
         if (_showLogs) ...[
-              const SizedBox(height: 8),
-              ChangeNotifierProvider.value(
-                value: widget.logsState,
-                child: LogsPanel(showLogs: true),
-              ),
-            ],
+          const SizedBox(height: 8),
+          ChangeNotifierProvider.value(
+            value: widget.logsState,
+            child: LogsPanel(showLogs: true),
+          ),
+        ],
       ],
     );
   }

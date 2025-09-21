@@ -8,7 +8,7 @@ class TranslateCCTab extends StatefulWidget {
   final LogsState logsState;
 
   TranslateCCTab({super.key, LogsState? logsState})
-      : logsState = logsState ?? LogsState();
+    : logsState = logsState ?? LogsState();
 
   @override
   State<TranslateCCTab> createState() => _TranslateCCTabState();
@@ -59,7 +59,8 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
                   items: ['English', 'Spanish', 'French', 'German', 'Chinese']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l)))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedSourceLanguage = v ?? 'English'),
+                  onChanged: (v) =>
+                      setState(() => _selectedSourceLanguage = v ?? 'English'),
                 ),
               ),
               SizedBox(width: 16),
@@ -70,7 +71,8 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
                   items: ['English', 'Spanish', 'French', 'German', 'Chinese']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l)))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedTargetLanguage = v ?? 'Spanish'),
+                  onChanged: (v) =>
+                      setState(() => _selectedTargetLanguage = v ?? 'Spanish'),
                 ),
               ),
               SizedBox(width: 16),
@@ -81,7 +83,8 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
                   items: ['.srt', '.vtt', '.txt']
                       .map((f) => DropdownMenuItem(value: f, child: Text(f)))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedFormat = v ?? '.srt'),
+                  onChanged: (v) =>
+                      setState(() => _selectedFormat = v ?? '.srt'),
                 ),
               ),
             ],
@@ -89,44 +92,76 @@ class _TranslateCCTabState extends State<TranslateCCTab> {
         ),
         // Main body: drag-and-drop + add button + file list
         Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.add),
+                      label: Text('+ Add'),
+                      onPressed: _pickFiles,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Stack(
                     children: [
-                      Icon(Icons.cloud_upload, size: 48, color: Colors.purpleAccent),
-                      SizedBox(height: 8),
-                      Text('Drag & drop subtitle files here', style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        icon: Icon(Icons.add),
-                        label: Text('+ Add'),
-                        onPressed: _pickFiles,
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cloud_upload,
+                              size: 48,
+                              color: Colors.purpleAccent,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Drag & drop subtitle files here',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              icon: Icon(Icons.add),
+                              label: Text('+ Add'),
+                              onPressed: _pickFiles,
+                            ),
+                          ],
+                        ),
                       ),
+                      if (_files.isNotEmpty)
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _files.map((f) => Text(f)).toList(),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (_files.isNotEmpty)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _files.map((f) => Text(f)).toList(),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         // Footer area
